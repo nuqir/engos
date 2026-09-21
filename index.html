@@ -1,0 +1,1330 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Тренажёр — чередующиеся гласные</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.category {
+    border: none;
+    border-radius: 12px;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    cursor: pointer;
+    font-size: 17px;
+    transition: 0.2s;
+}
+
+.category:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+}
+
+.random-category {
+    grid-column: 1 / -1;
+    background: #222;
+    color: white;
+    font-weight: bold;
+    font-size: 19px;
+}
+
+.quiz {
+    display: none;
+}
+
+.quiz-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.progress {
+    color: #666;
+}
+
+.score {
+    font-weight: bold;
+}
+
+.question-card {
+    background: white;
+    border-radius: 15px;
+    padding: 40px 25px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.category-title {
+    color: #777;
+    margin-bottom: 25px;
+}
+
+.word {
+    font-size: 34px;
+    font-weight: bold;
+    margin: 30px 0;
+}
+
+.answers {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.answer {
+    min-width: 100px;
+    padding: 18px 30px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    font-size: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.answer:hover:not(:disabled) {
+    background: #f0f0f0;
+}
+
+.answer:disabled {
+    cursor: default;
+}
+
+.answer.correct {
+    background: #d9f7df;
+    border-color: #36a853;
+    color: #18752d;
+}
+
+.answer.wrong {
+    background: #fde0e0;
+    border-color: #d93025;
+    color: #a50000;
+}
+
+.feedback {
+    margin-top: 25px;
+    min-height: 80px;
+    line-height: 1.5;
+}
+
+.feedback small {
+    display: block;
+    margin-top: 10px;
+    color: #666;
+}
+
+.next-button,
+.back-button {
+    border: none;
+    border-radius: 10px;
+    padding: 13px 25px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.next-button {
+    display: none;
+    background: #222;
+    color: white;
+}
+
+.back-button {
+    background: #ddd;
+    margin-top: 20px;
+}
+
+.result {
+    display: none;
+    text-align: center;
+}
+
+.result-card {
+    background: white;
+    border-radius: 15px;
+    padding: 35px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.result-score {
+    font-size: 42px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+.mistakes {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.mistake {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.mistake-word {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.mistake-answer {
+    margin-top: 5px;
+    color: #666;
+}
+
+@media (max-width: 600px) {
+
+    .word {
+        font-size: 27px;
+    }
+
+    .answer {
+        min-width: 80px;
+        padding: 15px 22px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ГЛАВНЫЙ ЭКРАН -->
+
+    <div id="home">
+
+        <h1>Чередующиеся гласные</h1>
+
+        <div class="subtitle">
+            Выберите тему
+        </div>
+
+        <div class="categories" id="categories"></div>
+
+    </div>
+
+
+    <!-- ТЕСТ -->
+
+    <div id="quiz" class="quiz">
+
+        <div class="quiz-top">
+
+            <div class="progress" id="progress">
+                Вопрос 1 из 10
+            </div>
+
+            <div class="score">
+                Баллы: <span id="score">0</span>
+            </div>
+
+        </div>
+
+
+        <div class="question-card">
+
+            <div class="category-title" id="categoryTitle"></div>
+
+            <div class="word" id="word"></div>
+
+            <div class="answers" id="answers"></div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <button
+                class="next-button"
+                id="nextButton"
+                onclick="nextQuestion()">
+                Следующее
+            </button>
+
+        </div>
+
+        <button
+            class="back-button"
+            onclick="goHome()">
+            ← К темам
+        </button>
+
+    </div>
+
+
+    <!-- РЕЗУЛЬТАТ -->
+
+    <div id="result" class="result">
+
+        <h1>Результат</h1>
+
+        <div class="result-card">
+
+            <div class="result-score" id="resultScore"></div>
+
+            <div id="resultText"></div>
+
+            <div class="mistakes" id="mistakes"></div>
+
+            <button
+                class="back-button"
+                onclick="goHome()">
+                ← Вернуться к темам
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+
+/* =========================================================
+   БАЗА ЗАДАНИЙ
+
+   ВАЖНО:
+   Здесь находится вся информация о заданиях.
+
+   Чтобы добавить новое слово:
+   1. Найдите нужную тему.
+   2. Добавьте новый объект { ... }.
+   3. Больше ничего менять НЕ НУЖНО.
+
+   Генеральный рандом автоматически увидит новое слово.
+   ========================================================= */
+
+
+const TASKS = {
+
+    "rast": {
+        title: "РАСТ / РАЩ / РОС",
+
+        questions: [
+
+            {
+                text: "выр..сло в саду",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В корнях -раст-/-ращ-/-рос- перед ст и щ пишется а, перед с — о. В слове «выросло» перед с пишется о. Исключения: росток, Ростов, Ростислав, ростовщик, отрасль, на вырост.",
+
+                correct_text: "вырОсло в саду"
+            }
+
+        ]
+    },
+
+
+    "lag": {
+        title: "ЛАГ / ЛОЖ",
+
+        questions: [
+
+            {
+                text: "прил..гать усилия",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "В безударном корне -лаг-/-лож- перед г пишется а, перед ж — о: прилагать, приложить. Исключение: полог.",
+
+                correct_text: "прилАгать усилия"
+            },
+
+            {
+                text: "прил..жил знания",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В безударном корне -лаг-/-лож- перед г пишется а, перед ж — о: прилагать, приложить. Исключение: полог.",
+
+                correct_text: "прилОжил знания"
+            }
+
+        ]
+    },
+
+
+    "ber_bir": {
+        title: "БЕР / БИР",
+
+        questions: [
+
+            {
+                text: "выб..ру вариант",
+                buttons: ["Е", "И"],
+                answer: "Е",
+
+                explanation:
+                    "В корне -бер-/-бир- пишется и, если после корня стоит суффикс -а-. В слове «выберу» этого суффикса нет, поэтому пишется е.",
+
+                correct_text: "выбЕру вариант"
+            }
+
+        ]
+    },
+
+
+    "mer_mir": {
+        title: "МЕР / МИР",
+
+        questions: [
+
+            {
+                text: "зам..рать от восторга",
+                buttons: ["Е", "И"],
+                answer: "И",
+
+                explanation:
+                    "В корне -мер-/-мир- пишется и перед суффиксом -а-: замирать. Без этого суффикса пишется е: замер.",
+
+                correct_text: "замИрать от восторга"
+            },
+
+            {
+                text: "зам..р от удивления",
+                buttons: ["Е", "И"],
+                answer: "Е",
+
+                explanation:
+                    "В корне -мер-/-мир- пишется и перед суффиксом -а-: замирать. Без этого суффикса пишется е: замер.",
+
+                correct_text: "замЕр от удивления"
+            }
+
+        ]
+    },
+
+
+    "stel_stil": {
+        title: "СТЕЛ / СТИЛ",
+
+        questions: [
+
+            {
+                text: "расст..лать плед",
+                buttons: ["И", "Е"],
+                answer: "И",
+
+                explanation:
+                    "В корне -стел-/-стил- пишется и перед суффиксом -а-: расстилать. Без этого суффикса пишется е: расстелить.",
+
+                correct_text: "расстИлать плед"
+            },
+
+            {
+                text: "расст..лить скатерть",
+                buttons: ["И", "Е"],
+                answer: "Е",
+
+                explanation:
+                    "В корне -стел-/-стил- пишется и перед суффиксом -а-: расстилать. Без этого суффикса пишется е: расстелить.",
+
+                correct_text: "расстЕлить скатерть"
+            }
+
+        ]
+    },
+
+
+    "zar_zor": {
+        title: "ЗАР / ЗОР",
+
+        questions: [
+
+            {
+                text: "утренняя з..ря",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "Корень зар- пишется в словах заря, зарница, озарять (под ударением – зарево, лучезарный) и во всех образованных от них словах (озарение и др.); корень зор- пишется под ударением в отдельных словах и формах: зорька, зоренька, зорюшка, зори, зорь, зорю.",
+
+                correct_text: "утренняя зА́ря"
+            }
+
+        ]
+    },
+
+
+    "plav_plov_plyv": {
+        title: "ПЛАВ / ПЛОВ / ПЛЫВ",
+
+        questions: [
+
+            {
+                text: "рекорд пл..вца",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В корне -плав- обычно пишется а. Слова-исключения «пловец» и «пловчиха» пишутся с о. Написание слова «плывун» нужно запомнить.",
+
+                correct_text: "рекорд плОвца"
+            }
+
+        ]
+    },
+
+
+    "klan_klon": {
+        title: "КЛАН / КЛОН",
+
+        questions: [
+
+            {
+                text: "решил накл..ниться",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В корне -клан-/-клон- без ударения пишется о: наклониться. Под ударением пишется та буква, которая слышится: раскланяться, поклон.",
+
+                correct_text: "решил наклОниться"
+            },
+
+            {
+                text: "артист раскл..нялся",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "В корне -клан-/-клон- без ударения пишется о: наклониться. Под ударением пишется та буква, которая слышится: раскланяться, поклон.",
+
+                correct_text: "артист расклАнялся"
+            }
+
+        ]
+    },
+
+
+    "skak_skoch": {
+        title: "СКАК / СКОЧ",
+
+        questions: [
+
+            {
+                text: "начала ск..кать",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "В безударном корне перед к пишется а, перед ч — о: скакать, вскочить. Исключения: скачок и формы глагола «скакать» — скачу, скачешь, скачет.",
+
+                correct_text: "начала скАкать"
+            },
+
+            {
+                text: "ск..чет на лошади",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "В безударном корне перед к пишется а, перед ч — о: скакать, вскочить. Исключения: скачок и формы глагола «скакать» — скачу, скачешь, скачет.",
+
+                correct_text: "скАчет на лошади"
+            },
+
+            {
+                text: "резко вск..чил",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В безударном корне перед к пишется а, перед ч — о: скакать, вскочить. Исключения: скачок и формы глагола «скакать» — скачу, скачешь, скачет.",
+
+                correct_text: "вскОчил"
+            }
+
+        ]
+    },
+
+
+    "gar_gor": {
+        title: "ГАР / ГОР",
+
+        questions: [
+
+            {
+                text: "люди заг..рают",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "Под ударением в корне -гар/-гор пишем А, без ударения — О. Исключения: выгарки, изгарь, пригарь.",
+
+                correct_text: "люди загОрают"
+            },
+
+            {
+                text: "красивый заг..р",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "Под ударением в корне -гар/-гор пишем А, без ударения — О. Исключения: выгарки, изгарь, пригарь.",
+
+                correct_text: "красивый загАр"
+            },
+
+            {
+                text: "образуется изг..рь",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "Под ударением в корне -гар/-гор пишем А, без ударения — О. Исключения: выгарки, изгарь, пригарь.",
+
+                correct_text: "образуется изгАрь"
+            }
+
+        ]
+    },
+
+
+    "ravn_rovn": {
+        title: "РАВН / РОВН",
+
+        questions: [
+
+            {
+                text: "р..внять землю",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "Корень -равн- связан со значением «равный, одинаковый», а -ровн- — со значением «ровный, гладкий»: уравнение, ровнять землю. Написания слов «равнина», «поровну», «уровень» следует запомнить.",
+
+                correct_text: "рОвнять землю"
+            },
+
+            {
+                text: "математическое ур..внение",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "Корень -равн- связан со значением «равный, одинаковый», а -ровн- — со значением «ровный, гладкий»: уравнение, ровнять землю. Написания слов «равнина», «поровну», «уровень» следует запомнить.",
+
+                correct_text: "урАвнение"
+            }
+
+        ]
+    },
+
+
+    "mak_mok": {
+        title: "МАК / МОК",
+
+        questions: [
+
+            {
+                text: "обм..кнуть кисточку",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "Корень -мак- пишется в значении «погружать в жидкость»: обмакнуть кисточку. Корень -мок- пишется в значении «становиться мокрым, пропитываться жидкостью»: одежда вымокла.",
+
+                correct_text: "обмАкнуть кисточку"
+            },
+
+            {
+                text: "одежда вым..кла",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "Корень -мак- пишется в значении «погружать в жидкость»: обмакнуть кисточку. Корень -мок- пишется в значении «становиться мокрым, пропитываться жидкостью»: одежда вымокла.",
+
+                correct_text: "одежда вымОкла"
+            }
+
+        ]
+    },
+
+
+    "kas_kos": {
+        title: "КАС / КОС",
+
+        questions: [
+
+            {
+                text: "нежное прик..сновение",
+                buttons: ["О", "А"],
+                answer: "О",
+
+                explanation:
+                    "В корне -кас-/-кос- пишется а перед суффиксом -а-: прикасаться. Без этого суффикса пишется о: прикосновение.",
+
+                correct_text: "нежное прикОсновение"
+            },
+
+            {
+                text: "прик..саться к посуде",
+                buttons: ["О", "А"],
+                answer: "А",
+
+                explanation:
+                    "В корне -кас-/-кос- пишется а перед суффиксом -а-: прикасаться. Без этого суффикса пишется о: прикосновение.",
+
+                correct_text: "прикАсаться к посуде"
+            }
+
+        ]
+    }
+
+};
+
+
+/* =========================================================
+   НАСТРОЙКИ
+   ========================================================= */
+
+const QUESTIONS_PER_QUIZ = 10;
+
+
+/* =========================================================
+   ПЕРЕМЕННЫЕ ИГРЫ
+   ========================================================= */
+
+let currentCategory = null;
+
+let questions = [];
+
+let currentQuestion = 0;
+
+let score = 0;
+
+let mistakes = [];
+
+let answered = false;
+
+
+/* =========================================================
+   РАНДОМАЙЗЕР
+
+   Этот алгоритм перемешивает любой массив.
+
+   Он используется и для отдельных тем,
+   и для генерального рандома.
+   ========================================================= */
+
+function shuffle(array) {
+
+    const result = [...array];
+
+    for (let i = result.length - 1; i > 0; i--) {
+
+        const j =
+            Math.floor(Math.random() * (i + 1));
+
+        [result[i], result[j]] =
+            [result[j], result[i]];
+    }
+
+    return result;
+}
+
+
+/* =========================================================
+   ПОЛУЧЕНИЕ ВСЕХ ВОПРОСОВ
+
+   Здесь находится главный принцип генерального рандома.
+
+   Он автоматически проходит по ВСЕМ темам TASKS
+   и собирает все вопросы в один массив.
+
+   Поэтому при добавлении нового вопроса в TASKS
+   ничего здесь менять не нужно.
+   ========================================================= */
+
+function getAllQuestions() {
+
+    let allQuestions = [];
+
+    Object.keys(TASKS).forEach(categoryKey => {
+
+        const category =
+            TASKS[categoryKey];
+
+        category.questions.forEach(question => {
+
+            allQuestions.push({
+
+                ...question,
+
+                category:
+                    categoryKey,
+
+                categoryTitle:
+                    category.title
+
+            });
+
+        });
+
+    });
+
+    return allQuestions;
+}
+
+
+/* =========================================================
+   СОЗДАНИЕ ГЛАВНОГО МЕНЮ
+   ========================================================= */
+
+function createCategories() {
+
+    const container =
+        document.getElementById("categories");
+
+    container.innerHTML = "";
+
+
+    /* Генеральный рандом */
+
+    const randomButton =
+        document.createElement("button");
+
+    randomButton.className =
+        "category random-category";
+
+    randomButton.textContent =
+        "🎲 Случайная смесь всех тем";
+
+    randomButton.onclick =
+        () => startQuiz("random");
+
+    container.appendChild(randomButton);
+
+
+    /* Обычные темы */
+
+    Object.keys(TASKS).forEach(categoryKey => {
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "category";
+
+        button.textContent =
+            TASKS[categoryKey].title;
+
+        button.onclick =
+            () => startQuiz(categoryKey);
+
+        container.appendChild(button);
+
+    });
+
+}
+
+
+/* =========================================================
+   НАЧАЛО ТЕСТА
+   ========================================================= */
+
+function startQuiz(category) {
+
+    currentCategory =
+        category;
+
+    currentQuestion = 0;
+
+    score = 0;
+
+    mistakes = [];
+
+
+    /* -------------------------
+       Обычная тема
+       ------------------------- */
+
+    if (category !== "random") {
+
+        const source =
+            TASKS[category].questions;
+
+        /*
+           Берём вопросы из базы
+           и перемешиваем их.
+        */
+
+        questions =
+            shuffle(source).map(question => ({
+
+                ...question,
+
+                category:
+                    category,
+
+                categoryTitle:
+                    TASKS[category].title
+
+            }));
+
+    }
+
+
+    /* -------------------------
+       Генеральный рандом
+       ------------------------- */
+
+    else {
+
+        /*
+           Получаем ВСЕ вопросы
+           из всех тем.
+        */
+
+        const allQuestions =
+            getAllQuestions();
+
+
+        /*
+           Перемешиваем весь массив.
+
+           Если вопросов больше,
+           чем нужно для одного теста,
+           берём первые QUESTIONS_PER_QUIZ.
+        */
+
+        questions =
+            shuffle(allQuestions)
+                .slice(
+                    0,
+                    Math.min(
+                        QUESTIONS_PER_QUIZ,
+                        allQuestions.length
+                    )
+                );
+
+    }
+
+
+    /*
+       Для обычной темы тоже ограничиваем
+       количество вопросов настройкой.
+
+       Если в теме всего 2 вопроса,
+       будет 2.
+       Если 20 — будет 10.
+    */
+
+    if (category !== "random") {
+
+        questions =
+            questions.slice(
+                0,
+                Math.min(
+                    QUESTIONS_PER_QUIZ,
+                    questions.length
+                )
+            );
+
+    }
+
+
+    document.getElementById("home")
+        .style.display = "none";
+
+    document.getElementById("result")
+        .style.display = "none";
+
+    document.getElementById("quiz")
+        .style.display = "block";
+
+
+    document.getElementById("score")
+        .textContent = "0";
+
+
+    loadQuestion();
+
+}
+
+
+/* =========================================================
+   ЗАГРУЗКА ВОПРОСА
+   ========================================================= */
+
+function loadQuestion() {
+
+    answered = false;
+
+
+    const question =
+        questions[currentQuestion];
+
+
+    document.getElementById("progress")
+        .textContent =
+            `Вопрос ${currentQuestion + 1} из ${questions.length}`;
+
+
+    document.getElementById("score")
+        .textContent = score;
+
+
+    document.getElementById("categoryTitle")
+        .textContent =
+            question.categoryTitle;
+
+
+    document.getElementById("word")
+        .textContent =
+            question.text;
+
+
+    document.getElementById("feedback")
+        .innerHTML = "";
+
+
+    document.getElementById("nextButton")
+        .style.display = "none";
+
+
+    /*
+       Кнопки берутся непосредственно
+       из текущего вопроса.
+
+       Поэтому здесь может быть:
+       О / А
+       Е / И
+       И / Е
+       и любые другие варианты.
+    */
+
+    const answersContainer =
+        document.getElementById("answers");
+
+    answersContainer.innerHTML = "";
+
+
+    question.buttons.forEach(buttonText => {
+
+        const button =
+            document.createElement("button");
+
+        button.className =
+            "answer";
+
+        button.textContent =
+            buttonText;
+
+        button.addEventListener(
+            "click",
+            () => checkAnswer(buttonText)
+        );
+
+        answersContainer.appendChild(button);
+
+    });
+
+}
+
+
+/* =========================================================
+   ПРОВЕРКА ОТВЕТА
+   ========================================================= */
+
+function checkAnswer(answer) {
+
+    if (answered) return;
+
+    answered = true;
+
+
+    const question =
+        questions[currentQuestion];
+
+
+    const buttons =
+        document.querySelectorAll(".answer");
+
+
+    buttons.forEach(button => {
+
+        button.disabled = true;
+
+
+        /*
+           Нажатая кнопка
+        */
+
+        if (button.textContent === answer) {
+
+            if (answer === question.answer) {
+
+                button.classList.add("correct");
+
+            } else {
+
+                button.classList.add("wrong");
+
+            }
+
+        }
+
+
+        /*
+           Правильная кнопка
+        */
+
+        if (button.textContent === question.answer) {
+
+            button.classList.add("correct");
+
+        }
+
+    });
+
+
+    /* -------------------------
+       Правильный ответ
+       ------------------------- */
+
+    if (answer === question.answer) {
+
+        score++;
+
+
+        document.getElementById("feedback")
+            .innerHTML = `
+                <strong>✓ Правильно!</strong>
+                ${question.correct_text}
+                <br>
+                <small>${question.explanation}</small>
+            `;
+
+    }
+
+
+    /* -------------------------
+       Ошибка
+       ------------------------- */
+
+    else {
+
+        document.getElementById("feedback")
+            .innerHTML = `
+                <strong>✗ Неверно</strong>
+                Правильный вариант:
+                <b>${question.answer}</b>
+                <br>
+                ${question.correct_text}
+                <br>
+                <small>${question.explanation}</small>
+            `;
+
+
+        mistakes.push({
+
+            question: question,
+
+            userAnswer: answer
+
+        });
+
+    }
+
+
+    document.getElementById("score")
+        .textContent = score;
+
+
+    document.getElementById("nextButton")
+        .style.display = "inline-block";
+
+}
+
+
+/* =========================================================
+   СЛЕДУЮЩИЙ ВОПРОС
+   ========================================================= */
+
+function nextQuestion() {
+
+    currentQuestion++;
+
+
+    if (currentQuestion >= questions.length) {
+
+        showResult();
+
+        return;
+
+    }
+
+
+    loadQuestion();
+
+}
+
+
+/* =========================================================
+   РЕЗУЛЬТАТ
+   ========================================================= */
+
+function showResult() {
+
+    document.getElementById("quiz")
+        .style.display = "none";
+
+    document.getElementById("result")
+        .style.display = "block";
+
+
+    document.getElementById("resultScore")
+        .textContent =
+            `${score} / ${questions.length}`;
+
+
+    document.getElementById("resultText")
+        .textContent =
+            `Правильных ответов: ${score} из ${questions.length}`;
+
+
+    showMistakes();
+
+}
+
+
+/* =========================================================
+   ОШИБКИ
+   ========================================================= */
+
+function showMistakes() {
+
+    const container =
+        document.getElementById("mistakes");
+
+
+    if (mistakes.length === 0) {
+
+        container.innerHTML = `
+            <h2>Ошибок нет 🎉</h2>
+        `;
+
+        return;
+
+    }
+
+
+    let html =
+        `<h2>Ошибки</h2>`;
+
+
+    mistakes.forEach(item => {
+
+        html += `
+
+            <div class="mistake">
+
+                <div class="mistake-word">
+                    ${item.question.correct_text}
+                </div>
+
+                <div class="mistake-answer">
+                    Вы выбрали:
+                    <b>${item.userAnswer}</b>
+                    <br>
+                    Правильно:
+                    <b>${item.question.answer}</b>
+                </div>
+
+                <small>
+                    ${item.question.explanation}
+                </small>
+
+            </div>
+
+        `;
+
+    });
+
+
+    container.innerHTML = html;
+
+}
+
+
+/* =========================================================
+   ВЕРНУТЬСЯ НА ГЛАВНУЮ
+   ========================================================= */
+
+function goHome() {
+
+    document.getElementById("quiz")
+        .style.display = "none";
+
+    document.getElementById("result")
+        .style.display = "none";
+
+    document.getElementById("home")
+        .style.display = "block";
+
+}
+
+
+/* =========================================================
+   ЗАПУСК
+   ========================================================= */
+
+createCategories();
+
+
+</script>
+
+</body>
+</html>
+```
