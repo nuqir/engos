@@ -304,6 +304,43 @@ body[data-theme="soft"] .tag {
  outline-offset:2px;
  font-weight:700;
 }
+
+/* Клавиатурный ввод ответов */
+
+.text-answer{
+ width:100%;
+ max-width:850px;
+ min-height:65px;
+ font-size:24px;
+ text-align:center;
+ padding:18px;
+ border:2px solid var(--border);
+ border-radius:12px;
+ outline:none;
+}
+
+.text-answer:focus{
+ border-color:var(--accent);
+}
+
+.text-answer::placeholder{
+ color:var(--muted);
+ font-size:18px;
+}
+
+.text-answer-help{
+ width:100%;
+ text-align:center;
+ color:var(--muted);
+ font-size:14px;
+}
+
+@media(max-width:600px){
+ .text-answer{
+  font-size:18px;
+  padding:12px;
+ }
+}
 </style>
 </head>
 
@@ -465,7 +502,25 @@ body[data-theme="soft"] .tag {
 <script src="data.js"></script>
 <script src="data/01-checked.js"></script>
 <script src="data/02-unchecked.js"></script>
-<script src="data/nn.js"></script>
+<script src="data/03-alternation.js"></script>
+<script src="data/04-consonants.js"></script>
+<script src="data/05-double.js"></script>
+<script src="data/06-prefixes.js"></script>
+<script src="data/07-signs.js"></script>
+<script src="data/08-sibilants.js"></script>
+<script src="data/09-soft.js"></script>
+<script src="data/10-nounend.js"></script>
+<script src="data/11-adjend.js"></script>
+<script src="data/12-verbend.js"></script>
+<script src="data/13-ne.js"></script>
+<script src="data/14-neni.js"></script>
+<script src="data/15-suffixes.js"></script>
+<script src="data/16-participles.js"></script>
+<script src="data/17-nn.js"></script>
+<script src="data/18-compounds.js"></script>
+<script src="data/19-numerals.js"></script>
+<script src="data/20-adverbs.js"></script>
+<script src="data/21-functionwords.js"></script>
 <script>
 "use strict";
 
@@ -675,8 +730,68 @@ function drawWord(){
   `Заполнено пропусков: ${selections.length}/${q.blanks.length}`;
 }
 
+
+// Определение типа ввода
+
+function isTextAnswer(q,blank){
+
+ if(!blank)return false;
+
+ if(blank.inputType==="text" ||
+    q.inputType==="text"){
+  return true;
+ }
+
+ // Автоматическое распознавание заданий
+ // с записью числительных словами
+
+ return q.topic==="numerals" &&
+        blank.answer.length>3;
+
+}
+
+
+// Нормализация текстового ответа
+
+function normalizeTextAnswer(value){
+
+ return String(value)
+  .normalize("NFC")
+  .trim()
+  .toLowerCase()
+  .replace(/ё/g,"е")
+  .replace(/\s+/g," ");
+
+}
+
+
+// Проверка отдельного ответа
+
+function isCorrectAnswer(q,blank,value){
+
+ if(!isTextAnswer(q,blank)){
+  return blank.answer===value;
+ }
+
+ const accepted=[
+  blank.answer,
+  ...(blank.acceptedAnswers||[])
+ ];
+
+ return accepted.some(answer=>
+  normalizeTextAnswer(answer)===
+  normalizeTextAnswer(value)
+ );
+
+}
+
+
+// Отображение вариантов ответа
+
 function drawAnswers(){
+
  const q=queue[position];
+
  $("answers").replaceChildren();
 
  const blank=q.blanks[selections.length];
@@ -684,19 +799,145 @@ function drawAnswers(){
  $("check").disabled=
   selections.length!==q.blanks.length || locked;
 
- $("undo").disabled=!selections.length || locked;
+ $("undo").disabled=
+  !selections.length || locked;
 
  if(!blank || locked)return;
 
- blank.options.forEach(option=>{
-  const button=document.createElement("button");
-  button.className="answer";
-  button.textContent=option===""?"Без знака":option;
-  button.onclick=()=>choose(option);
-  $("answers").appendChild(button);
- });
-}
 
+ // ========================================
+ // КЛАВИАТУРНЫЙ ВВОД
+ // ========================================
+
+ if(isTextAnswer(q,blank)){
+
+  const input=document.createElement("input");
+
+  input.type="text";
+  input.id="textAnswer";
+  input.className="text-answer";
+
+  input.placeholder=
+   q.topic==="numerals"
+    ?"Запишите числительное словами..."
+    :"Введите правильный ответ...";
+
+  input.autocomplete="off";
+  input.autocapitalize="off";
+  input.spellcheck=false;
+
+  input.setAttribute("autocorrect","off");
+
+  input.setAttribute(
+   "aria-label",
+   "Введите правильный ответ"
+  );
+
+  $("answers").appendChild(input);
+
+
+  const help=document.createElement("div");
+
+  help.className="text-answer-help";
+
+  help.textContent=
+   "Введите ответ и нажмите Enter или «Проверить».";
+
+  $("answers").appendChild(help);
+
+
+  $("instruction").textContent=
+   q.topic==="numerals"
+    ?"Запишите числительное словами в нужной форме."
+    :"Введите правильный ответ с клавиатуры.";
+
+
+  $("check").disabled=true;
+
+
+  input.addEventListener("input",()=>{
+
+   $("check").disabled=
+    !input.value.trim() || locked;
+
+  });
+
+
+  input.addEventListener("keydown",event=>{
+
+   if(event.key==="Enter" &&
+      !event.isComposing){
+
+    event.preventDefault();
+
+    if(input.value.trim() && !locked){
+     check();
+    }
+
+   }
+
+  });
+
+
+  input.focus();
+
+  return;
+
+ }
+
+
+ // ========================================
+ // ОБЫЧНЫЕ КНОПКИ
+ // ========================================
+
+ $("instruction").textContent=
+  q.instruction || "Выберите правильное написание";
+
+
+ blank.options.forEach(option=>{
+
+  const button=document.createElement("button");
+
+  button.className="answer";
+
+
+  if(blank.options.includes("") &&
+   blank.options.includes(" ")){
+
+   button.textContent=
+    option==="" ? "Слитно" :
+    option==="-" ? "Через дефис" :
+    option===" " ? "Раздельно" :
+    option;
+
+  }else if(option===""){
+
+   button.textContent="Без знака";
+
+  }else if(/^(не|ни) $/i.test(option)){
+
+   button.textContent=
+    option.trim().toUpperCase()+" (раздельно)";
+
+  }else if(/^(не|ни)$/i.test(option)){
+
+   button.textContent=
+    option.toUpperCase()+" (слитно)";
+
+  }else{
+
+   button.textContent=option;
+
+  }
+
+
+  button.onclick=()=>choose(option);
+
+  $("answers").appendChild(button);
+
+ });
+
+}
 function choose(value){
  if(locked)return;
  if(selections.length>=queue[position].blanks.length)return;
@@ -747,13 +988,53 @@ function explanation(q){
  `;
 }
 
+
 function check(){
+
  const q=queue[position];
- if(locked || selections.length!==q.blanks.length)return;
+
+ if(locked)return;
+
+
+ // Получение ответа из текстового поля
+
+ const blank=q.blanks[selections.length];
+
+ const textInput=$("textAnswer");
+
+ if(blank && isTextAnswer(q,blank) && textInput){
+
+  const value=textInput.value.trim();
+
+  if(!value)return;
+
+  selections.push(value);
+
+  drawWord();
+
+  // Поддержка заданий с несколькими пропусками
+
+  if(selections.length<q.blanks.length){
+
+   drawAnswers();
+
+   return;
+
+  }
+
+ }
+
+
+ if(selections.length!==q.blanks.length)return;
 
  locked=true;
 
- const correct=q.blanks.every((b,i)=>b.answer===selections[i]);
+
+ // Проверка всех заполненных пропусков
+
+ const correct=q.blanks.every(
+  (blank,i)=>isCorrectAnswer(q,blank,selections[i])
+ );
 
  saved.total++;
 
